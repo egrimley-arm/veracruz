@@ -45,12 +45,14 @@ use veracruz_utils::policy::principal::ExecutionStrategy;
 
 pub struct Options {
     pub enable_clock: bool,
+    pub strace: bool,
 }
 
 impl Default for Options {
     fn default() -> Options {
         Options {
             enable_clock: false,
+            strace: false,
         }
     }
 }

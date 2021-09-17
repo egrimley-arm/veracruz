@@ -90,6 +90,8 @@ struct CommandLineOptions {
     /// Whether clock functions (`clock_getres()`, `clock_gettime()`) should be
     /// enabled.
     enable_clock: bool,
+    /// Whether strace is enabled.
+    strace: bool,
 }
 
 /// Parses the command line options, building a `CommandLineOptions` struct out
@@ -150,6 +152,12 @@ fn parse_command_line() -> Result<CommandLineOptions, Box<dyn Error>> {
                      enabled.",
                 )
                 .value_name("BOOLEAN"),
+        )
+        .arg(
+            Arg::with_name("strace")
+                .long("strace")
+                .help("Enable strace-like output for WASI calls.")
+                .multiple(true),
         )
         .get_matches();
 
@@ -235,6 +243,8 @@ fn parse_command_line() -> Result<CommandLineOptions, Box<dyn Error>> {
         }
     };
 
+    let strace = matches.is_present("strace");
+
     Ok(CommandLineOptions {
         data_sources,
         binary,
@@ -242,6 +252,7 @@ fn parse_command_line() -> Result<CommandLineOptions, Box<dyn Error>> {
         dump_stdout,
         dump_stderr,
         enable_clock,
+        strace,
     })
 }
 
@@ -366,6 +377,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let main_time = Instant::now();
     let options = Options {
         enable_clock: cmdline.enable_clock,
+        strace: cmdline.strace,
         ..Default::default()
     };
     let return_code = execute(

@@ -371,6 +371,21 @@ pub struct WasiWrapper {
     exit_code: Option<u32>,
     /// Whether clock functions (`clock_getres()`, `clock_gettime()`) should be enabled.
     pub enable_clock: bool,
+    /// Whether strace is enabled.
+    pub enable_strace: bool,
+}
+
+macro_rules! strace {
+    ($self: expr, $name: expr, $block: block) => {{
+        let result = (|| $block)();
+        if $self.enable_strace {
+            match result {
+                Ok(()) => eprintln!("{}(...) = Success", $name),
+                Err(x) => eprintln!("{}(...) = {:?}", $name, x),
+            }
+        };
+        result
+    }};
 }
 
 impl WasiWrapper {
@@ -395,6 +410,7 @@ impl WasiWrapper {
             principal,
             exit_code: None,
             enable_clock: false,
+            enable_strace: false,
         }
     }
 
@@ -983,25 +999,27 @@ impl WasiWrapper {
         fd_flags: u16,
         address: u32,
     ) -> FileSystemResult<()> {
-        let fd = Fd(fd);
-        let path = memory_ref.read_cstring(path_address, path_length)?;
-        let dir_flags: LookupFlags = Self::decode_wasi_arg(dir_flags)?;
-        let oflags: OpenFlags = Self::decode_wasi_arg(oflags)?;
-        let fs_rights_base: Rights = Self::decode_wasi_arg(fs_rights_base)?;
-        let fs_rights_inheriting: Rights = Self::decode_wasi_arg(fs_rights_inheriting)?;
-        let fd_flags: FdFlags = Self::decode_wasi_arg(fd_flags)?;
-        let mut fs = self.lock_vfs()?;
-        let new_fd = fs.path_open(
-            &self.principal,
-            fd,
-            dir_flags,
-            &path,
-            oflags,
-            fs_rights_base,
-            fs_rights_inheriting,
-            fd_flags,
-        )?;
-        memory_ref.write_u32(address, new_fd.into())
+        strace!(self, "path_open", {
+            let fd = Fd(fd);
+            let path = memory_ref.read_cstring(path_address, path_length)?;
+            let dir_flags: LookupFlags = Self::decode_wasi_arg(dir_flags)?;
+            let oflags: OpenFlags = Self::decode_wasi_arg(oflags)?;
+            let fs_rights_base: Rights = Self::decode_wasi_arg(fs_rights_base)?;
+            let fs_rights_inheriting: Rights = Self::decode_wasi_arg(fs_rights_inheriting)?;
+            let fd_flags: FdFlags = Self::decode_wasi_arg(fd_flags)?;
+            let mut fs = self.lock_vfs()?;
+            let new_fd = fs.path_open(
+                &self.principal,
+                fd,
+                dir_flags,
+                &path,
+                oflags,
+                fs_rights_base,
+                fs_rights_inheriting,
+                fd_flags,
+            )?;
+            memory_ref.write_u32(address, new_fd.into())
+        })
     }
 
     /// The implementation of the WASI `path_readlink` function. It requires an extra `memory_ref` to
