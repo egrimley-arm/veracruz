@@ -357,6 +357,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         file_table.insert(PathBuf::from(path), rights);
     }
     file_table.insert(PathBuf::from(OUTPUT_FILE), write_right);
+    file_table.insert(PathBuf::from("sock"), write_right);
     right_table.insert(Principal::Program(prog_file_name.to_string()), file_table);
 
     let vfs = Arc::new(Mutex::new(FileSystem::new(right_table, &std_streams_table)));
@@ -368,6 +369,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             &program,
             false,
         )?;
+    vfs.lock()
+        .map_err(|e| format!("Failed to lock vfs, error: {:?}", e))?
+        .write_file_by_filename(&Principal::InternalSuperUser, "sock", b"", false)?;
     info!("WASM program {} loaded into VFS.", prog_file_name);
 
     load_data_sources(&cmdline, vfs.clone())?;
