@@ -14,6 +14,7 @@
 //! See the `LICENSE_MIT.markdown` file in the Veracruz root directory for
 //! information on licensing and copyright.
 
+use crate::sock;
 use platform_services::getrandom;
 use std::{
     collections::HashMap,
@@ -563,6 +564,11 @@ impl FileSystem {
         self.check_right(&fd, Rights::FD_READ)?;
         let offset = self.fd_table.get(&fd).ok_or(ErrNo::BadF)?.offset;
 
+        let inode = self.fd_table.get(&fd).ok_or(ErrNo::BadF)?.inode;
+        if sock::is_parsec_inode(inode) {
+            return Ok(sock::read(len));
+        }
+
         let rst = self.fd_pread(fd, len, offset)?;
         self.fd_seek(fd, rst.len() as i64, Whence::Current)?;
         Ok(rst)
@@ -655,6 +661,13 @@ impl FileSystem {
     /// current `offset` of Fd `fd` and then calls `fd_seek`.
     pub(crate) fn fd_write(&mut self, fd: Fd, buf: &[u8]) -> FileSystemResult<Size> {
         self.check_right(&fd, Rights::FD_WRITE)?;
+
+        let inode = self.fd_table.get(&fd).ok_or(ErrNo::BadF)?.inode;
+        if sock::is_parsec_inode(inode) {
+            sock::write(buf);
+            return Ok(buf.len() as Size);
+        }
+
         let offset = self.fd_table.get(&fd).ok_or(ErrNo::BadF)?.offset;
 
         let rst = self.fd_pwrite(fd, buf, offset)?;
@@ -1011,6 +1024,28 @@ impl FileSystem {
         }
         self.fd_write(fd, data)?;
         self.fd_close(fd)?;
+        Ok(())
+    }
+
+    pub fn register_parsec_socket<T: AsRef<Path>>(
+        &mut self,
+        principal: &Principal,
+        file_name: T,
+    ) -> Result<(), ErrNo> {
+        let file_name = file_name.as_ref();
+        let oflag = OpenFlags::CREATE;
+        let fd = self.path_open(
+            principal,
+            FileSystem::ROOT_DIRECTORY_FD,
+            LookupFlags::empty(),
+            file_name,
+            oflag,
+            FileSystem::DEFAULT_RIGHTS,
+            FileSystem::DEFAULT_RIGHTS,
+            FdFlags::empty(),
+        )?;
+        let inode = self.fd_table.get(&fd).ok_or(ErrNo::BadF)?.inode;
+        sock::register_parsec_inode(inode);
         Ok(())
     }
 

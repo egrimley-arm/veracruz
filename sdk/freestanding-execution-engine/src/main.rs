@@ -324,6 +324,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         | Rights::FD_SEEK
         | Rights::PATH_CREATE_FILE
         | Rights::PATH_FILESTAT_SET_SIZE;
+    let sock_right = Rights::PATH_OPEN
+        | Rights::FD_READ
+        | Rights::FD_WRITE
+        | Rights::PATH_CREATE_FILE
+        | Rights::PATH_FILESTAT_SET_SIZE;
 
     // Set up standard streams table
     let std_streams_table = vec![
@@ -357,7 +362,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         file_table.insert(PathBuf::from(path), rights);
     }
     file_table.insert(PathBuf::from(OUTPUT_FILE), write_right);
-    file_table.insert(PathBuf::from("sock"), write_right);
+    file_table.insert(PathBuf::from("sock"), sock_right);
     right_table.insert(Principal::Program(prog_file_name.to_string()), file_table);
 
     let vfs = Arc::new(Mutex::new(FileSystem::new(right_table, &std_streams_table)));
@@ -372,6 +377,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     vfs.lock()
         .map_err(|e| format!("Failed to lock vfs, error: {:?}", e))?
         .write_file_by_filename(&Principal::InternalSuperUser, "sock", b"", false)?;
+    vfs.lock()
+        .map_err(|e| format!("Failed to lock vfs, error: {:?}", e))?
+        .register_parsec_socket(&Principal::InternalSuperUser, "sock")?;
     info!("WASM program {} loaded into VFS.", prog_file_name);
 
     load_data_sources(&cmdline, vfs.clone())?;
