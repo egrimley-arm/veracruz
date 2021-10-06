@@ -8,10 +8,10 @@
 #define assert(x) do { if (!(x)) { \
         assert_fail(__FILE__, __LINE__, __func__, #x); } } while (0)
 
-void assert_fail(const char *file, unsigned long line,
+void assert_fail(const char *file, unsigned long long line,
                  const char *func, const char *cond)
 {
-    fprintf(stderr, "%s:%ld: %s: Assertion '%s' failed.\n",
+    fprintf(stderr, "%s:%llu: %s: Assertion '%s' failed.\n",
             file, line, func, cond);
     exit(1);
 }
@@ -46,8 +46,11 @@ int main()
 
     uint8_t plain2[16] = { 0 };
     size_t plain_len = 0;
+    struct timespec ts1, ts2;
+    assert(!clock_gettime(CLOCK_MONOTONIC, &ts1));
     assert(!psa_cipher_decrypt(key, alg, cypher, cypher_len,
                                plain2, sizeof(plain2), &plain_len));
+    assert(!clock_gettime(CLOCK_MONOTONIC, &ts2));
 
     assert(plain_len == sizeof(plain) &&
            !memcmp(plain, plain2, sizeof(plain)));
@@ -55,6 +58,10 @@ int main()
     for (size_t i = 0; i < cypher_len; i++)
         printf(" %02x", cypher[i]);
     printf("\n");
+
+    printf("Time: %llu ns\n",
+           (ts2.tv_sec - ts1.tv_sec) * 1000000000ULL +
+           (ts2.tv_nsec - ts1.tv_nsec));
 
     return 0;
 }

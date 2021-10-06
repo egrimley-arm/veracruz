@@ -61,4 +61,4 @@ native/prog
 
 echo Wasm:
 cd ../freestanding-execution-engine
-cargo run -- --program ../crypto/wasm/prog -e true -o true
+cargo run -- --program ../crypto/wasm/prog -e true -o true --enable-clock true
