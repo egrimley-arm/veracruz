@@ -4,12 +4,15 @@ set -e
 
 export NATIVE_CC=gcc
 
+#xx This should be changed:
+export WASI_BASE=/data/wasi-sdk
+
 export WASI_VERSION=12
 export WASI_VERSION_FULL=${WASI_VERSION}.0
-export WASI_SDK_PATH=/data/wasi-sdk/wasi-sdk-${WASI_VERSION_FULL}
+export WASI_SDK_PATH=$WASI_BASE/wasi-sdk-${WASI_VERSION_FULL}
 export WASM_CC="${WASI_SDK_PATH}/bin/clang "\
 "--sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
-export WASM_RANLIB=/data/wasi-sdk/wasi-sdk-12.0/bin/ranlib
+export WASM_RANLIB=$WASI_BASE/wasi-sdk-12.0/bin/ranlib
 
 export CFLAGS='-DMBEDTLS_USER_CONFIG_FILE=\"mbedtls_user_config.h\"'\
 " -I$(pwd)/include"
