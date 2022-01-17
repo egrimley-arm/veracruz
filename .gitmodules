@@ -19,7 +19,10 @@
 	url = https://github.com/nanopb/nanopb
 [submodule "icecap/icecap"]
 	path = icecap/icecap
-	url = https://gitlab.com/arm-research/security/icecap/icecap.git
+	url = https://gitlab.com/egrimley/icecap.git
 [submodule "icecap/sysroot/rust"]
 	path = icecap/sysroot/rust
 	url = https://gitlab.com/arm-research/security/icecap/rust.git
+[submodule "rust-psa-crypto"]
+	path = rust-psa-crypto
+	url = https://github.com/egrimley-arm/rust-psa-crypto.git

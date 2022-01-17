@@ -20,3 +20,11 @@ int snprintf(char *str, size_t size, const char *format, ...) {
     strcpy(str, format);
     return 0;
 }
+
+FILE *stdin = 0;
+FILE *stdout = 0;
+FILE *stderr = 0;
+
+void __assert_fail(const char  *str, const char *file, int line, const char *function)
+{
+}
