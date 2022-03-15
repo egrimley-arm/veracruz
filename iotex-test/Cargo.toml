@@ -1,0 +1,7 @@
+[package]
+name = "test-rust-psa-crypto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+psa-crypto = { path = "../third-party/rust-psa-crypto/psa-crypto" }
